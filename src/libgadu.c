@@ -43,6 +43,7 @@
 #include "protobuf.h"
 #include "packets.pb-c.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -954,6 +955,45 @@ struct gg_session *gg_login(const struct gg_login_params *p)
 			goto fail;
 	}
 
+	if (GG_LOGIN_PARAMS_HAS_FIELD(p, installation_id) &&
+		p->installation_id != NULL)
+	{
+		const char *c = p->installation_id;
+
+		while (*c != '\0' && isxdigit((unsigned char) *c))
+			c++;
+
+		if (*c == '\0' && c - p->installation_id == 32) {
+			sess_private->installation_id =
+				strdup(p->installation_id);
+			if (sess_private->installation_id == NULL)
+				goto fail;
+		} else {
+			gg_debug(GG_DEBUG_MISC, "// gg_login() invalid "
+				"installation_id, using default\n");
+		}
+	}
+
+	if (sess_private->installation_id == NULL) {
+		uint8_t digest[20];
+		int i;
+
+		/* Domyślny identyfikator instalacji - stały dla danego
+		 * numeru, żeby serwer nie widział co sesję nowego
+		 * urządzenia. */
+		if (gg_login_hash_sha1_2("libgadu-installation-id", p->uin,
+			digest) == -1)
+			goto fail;
+
+		sess_private->installation_id = malloc(33);
+		if (sess_private->installation_id == NULL)
+			goto fail;
+
+		for (i = 0; i < 16; i++)
+			snprintf(sess_private->installation_id + i * 2, 3,
+				"%02x", digest[i]);
+	}
+
 	if (p->protocol_features == 0) {
 		sess->protocol_features = GG_FEATURE_MSG80 |
 			GG_FEATURE_STATUS80 | GG_FEATURE_DND_FFC |
@@ -1278,6 +1318,7 @@ void gg_free_session(struct gg_session *sess)
 	}
 
 	gg_strarr_free(sess->private_data->host_white_list);
+	free(sess->private_data->installation_id);
 
 	free(sess->private_data);
 

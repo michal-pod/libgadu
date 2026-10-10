@@ -46,7 +46,7 @@
 #define GG8_VERSION	"Gadu-Gadu Client Build "
 
 #define GG11_VERSION	"GG-Phoenix/"
-#define GG11_TARGET	" (BUILD;WINNT_x86-msvc;rv:11.0,pl;release;standard) (OS;Windows;Windows NT 6.1)"
+#define GG11_TARGET	" (BUILD;WINNT_x86-msvc;rv:12.34.4460.6850;pl;release;standard) (OS;Windows;Windows NT 6.3;WOW64)"
 
 struct gg_login80 {
 	uint32_t uin;			/* mój numerek */

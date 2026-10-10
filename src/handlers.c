@@ -101,6 +101,8 @@ static int gg_session_handle_welcome_110(struct gg_session *gs, uint32_t seed,
 	const char *client_version = GG_DEFAULT_CLIENT_VERSION_110;
 	const char *client_target = GG11_TARGET;
 	uint8_t dummy4[4] = {0, 0, 0, 0};
+	char *password_utf8;
+	int ret;
 
 	if (gs->hash_type != GG_LOGIN_HASH_SHA1) {
 		gg_debug_session(gs, GG_DEBUG_ERROR, "// Unsupported hash type "
@@ -158,7 +160,31 @@ static int gg_session_handle_welcome_110(struct gg_session *gs, uint32_t seed,
 	msg.has_dummy8 = 1;
 	msg.has_dummy10 = 1;
 
-	if (!GG_PROTOBUF_SEND(gs, ge, GG_LOGIN105, gg105_login, msg))
+	/* GG12.5: serwer wymaga hasła otwartym tekstem (web_login_token)
+	 * i identyfikatora instalacji. Oryginalny klient liczy pole hash
+	 * jako SHA1("" + seed), bo przez błąd przekazuje hasło tylko
+	 * w web_login_token, a pole password zostawia puste. Serwer nie
+	 * weryfikuje więc skrótu i akceptuje także nasz SHA1(hasło + seed). */
+	password_utf8 = gg_encoding_convert(gs->password, gs->encoding,
+		GG_ENCODING_UTF8, -1, -1);
+	if (password_utf8 == NULL) {
+		gg_connection_failure(gs, ge, GG_FAILURE_INTERNAL);
+		return -1;
+	}
+	msg.password = password_utf8;
+	msg.installation_id = gs->private_data->installation_id;
+	msg.has_dummy11 = 1;
+	msg.has_dummy12 = 1;
+	msg.has_dummy13 = 1;
+	msg.dummy13 = ((uint64_t) 0x2b << 32) | msg.dummy2;
+	msg.has_dummy14 = 1;
+
+	ret = GG_PROTOBUF_SEND(gs, ge, GG_LOGIN105, gg105_login, msg);
+
+	memset(password_utf8, 0, strlen(password_utf8));
+	free(password_utf8);
+
+	if (!ret)
 		return -1;
 
 	gs->state = GG_STATE_READING_REPLY;

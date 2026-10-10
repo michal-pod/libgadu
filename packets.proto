@@ -36,7 +36,7 @@ message GG105Login
 {
 	required string lang = 1;
 	required bytes uin = 2;
-	required bytes hash = 3;
+	required bytes hash = 3; // GG12.5 wysyła SHA1("" + seed), patrz password
 	required string client = 7;
 	required fixed32 initial_status = 8 [default = 0x2023]; // GG_STATUS_NOT_SET | USE_LAST_STATUS
 	required string initial_descr = 9 [default = ""];
@@ -51,14 +51,15 @@ message GG105Login
 	/* GG10.5: 0x0002e737
 	 * GG11.0: 0x01aeff77
 	 * GG11.2: 0x03eeff77
+	 * GG12.5: 0x63eeff77
 	 */
-	required fixed32 dummy2 = 5 [default = 0x03eeff77];
+	required fixed32 dummy2 = 5 [default = 0x63eeff77];
 
 	/* privacy flag: 0x00000600
 	 * GG11.0:       0x00030014
 	 * GG10.5:       0x00000003
 	 */
-	required fixed32 dummy3 = 6 [default = 0x00030614];
+	required fixed32 dummy3 = 6 [default = 0x00030014];
 
 	required bytes dummy4 = 10; // 4x 0x00
 	required int32 dummy5 = 12 [default = 0xFF];
@@ -67,6 +68,12 @@ message GG105Login
 	optional int32 dummy8 = 15 [default = 0]; // GG11.0+
 	//optional unknown_type dummy9 = 16;
 	optional uint32 dummy10 = 17 [default = 0]; // GG11.0+
+	optional int32 dummy11 = 23 [default = 0]; // GG12.5+
+	optional string password = 24; // GG12.5+, hasło otwartym tekstem
+	optional int32 dummy12 = 25 [default = 0]; // GG12.5+
+	optional fixed64 dummy13 = 26 [default = 0x0000002b63eeff77]; // GG12.5+
+	optional fixed64 dummy14 = 28 [default = 0]; // GG12.5+
+	optional string installation_id = 29; // GG12.5+, 32 znaki hex
 }
 
 // komponent GG110MessageAck
